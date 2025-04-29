@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres_db_dagster:
+    image: postgres:latest
+    container_name: postgres_db_dagster
+    environment:
+      POSTGRES_USER: dagster
+      POSTGRES_PASSWORD: dagster
+      POSTGRES_DB: dagster
+    ports:
+      - "5532:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dagster"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dagster_ui:
+    build:
+      context: .
+      dockerfile: Dockerfiles/Dagster/Dockerfile
+    container_name: dagster_ui
+    command: ["uv", "run", "dagster", "dev", "-h", "0.0.0.0", "-p", "3000"]
+    ports:
+      - "3001:3000"
+    environment:
+      DAGSTER_POSTGRES_HOST: postgres_db_dagster
+      DAGSTER_POSTGRES_DB: dagster
+      DAGSTER_POSTGRES_USER: dagster
+      DAGSTER_POSTGRES_PASSWORD: dagster
+      DAGSTER_HOME: /opt/dagster/dagster_home
+      DAGSTER_POSTGRES_PORT: 5532
+    volumes:
+      - ./dagster_home:/opt/dagster/dagster_home
+    depends_on:
+      postgres_db_dagster:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
