@@ -33,6 +33,23 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres_db_report_db:
+    image: postgres:latest
+    container_name: postgres_db_report_db
+    environment:
+      POSTGRES_USER: report_db
+      POSTGRES_PASSWORD: report_db
+      POSTGRES_DB: report_db
+    ports:
+      - "5534:5432"
+    volumes:
+      - postgres_data_report_db:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U report_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   dagster_ui:
     build:
       context: .
@@ -81,3 +98,4 @@ services:
 volumes:
   postgres_data:
   postgres_data_operational_db:
+  postgres_data_report_db:

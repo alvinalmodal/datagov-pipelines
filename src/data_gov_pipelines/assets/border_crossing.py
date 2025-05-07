@@ -6,6 +6,21 @@ from dagster import AssetExecutionContext, asset
 from pandas import DataFrame
 import duckdb
 
+postgres_config = {
+    "host": "127.0.0.1",
+    "port": 5533,
+    "dbname": "operation_db",
+    "user": "operation_db",
+    "password": "operation_db",
+}
+
+postgres_report_config = {
+    "host": "127.0.0.1",
+    "port": 5534,
+    "dbname": "report_db",
+    "user": "report_db",
+    "password": "report_db",
+}
 
 @asset
 def bronze_borders_crossing(context: AssetExecutionContext) -> DataFrame:
@@ -29,15 +44,8 @@ def bronze_borders_crossing(context: AssetExecutionContext) -> DataFrame:
 
 
 @asset
-def silver_borders_crossing(context: AssetExecutionContext, bronze_borders_crossing):
+def silver_borders_crossing(context: AssetExecutionContext, bronze_borders_crossing) -> DataFrame:
     context.log.info('Processing Silver Layer for border_crossing')
-    postgres_config = {
-        "host": "127.0.0.1",
-        "port": 5533,
-        "dbname": "operation_db",
-        "user": "operation_db",
-        "password": "operation_db",
-    }
     con = duckdb.connect()
 
     con.execute("INSTALL postgres;")
@@ -58,4 +66,36 @@ def silver_borders_crossing(context: AssetExecutionContext, bronze_borders_cross
             SELECT * FROM postgres_db.public.{table_name};
         """).fetchdf()
     context.log.info("logging data from operation_db")
-    context.log.info(result_df)
+    return result_df
+
+
+@asset
+def gold_borders_crossing_total_migration_by_port_code(context: AssetExecutionContext, silver_borders_crossing):
+    context.log.info('Processing Gold Layer for border_crossing')
+    con = duckdb.connect()
+
+    con.execute("INSTALL postgres;")
+    con.execute("LOAD postgres;")
+
+    con.execute(f"""
+            ATTACH 'dbname={postgres_report_config['dbname']} user={postgres_report_config['user']} 
+                    password={postgres_report_config['password']} host={postgres_report_config['host']} port={postgres_report_config['port']}' 
+            AS postgres_db (TYPE postgres);
+        """)
+
+    table_name = "total_migration_by_port_code"
+    con.execute(f"""
+        CREATE TABLE IF NOT EXISTS postgres_db.public.{table_name} (
+            state VARCHAR(250) not null,
+            port_code VARCHAR(250) not null,
+            border VARCHAR(250) not null,
+            value INTEGER not null
+        )
+    """)
+
+    con.execute(f"""
+        INSERT INTO postgres_db.public.{table_name} (value, state, port_code, border)
+        SELECT SUM("Value") as value, "State" as state, "Port Code" as port_code, "Border" as border
+        FROM silver_borders_crossing
+        GROUP BY "State", "Port Code", "Border"
+    """)
