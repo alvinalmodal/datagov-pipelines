@@ -178,3 +178,5 @@ temp_data/
 dagster_home/
 postgres_data/
 postgres_data_operational_db/
+postgres_db_grafana_db/
+postgres_db_report_db/

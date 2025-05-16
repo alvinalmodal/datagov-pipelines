@@ -1,3 +1,4 @@
 load_from:
   - python_module: src.data_gov_pipelines
   - python_module: src.job_search_pipelines
+  - python_module: src.machine_learning_pipelines

@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: dagster
     ports:
       - "5532:5432"
+    networks:
+      - datagovpipelines_network
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,6 +27,9 @@ services:
       POSTGRES_DB: operation_db
     ports:
       - "5533:5432"
+    networks:
+      datagovpipelines_network:
+        ipv4_address: 172.30.0.20
     volumes:
       - postgres_data_operational_db:/var/lib/postgresql/data
     healthcheck:
@@ -42,6 +47,9 @@ services:
       POSTGRES_DB: report_db
     ports:
       - "5534:5432"
+    networks:
+      datagovpipelines_network:
+        ipv4_address: 172.30.0.21
     volumes:
       - postgres_data_report_db:/var/lib/postgresql/data
     healthcheck:
@@ -49,6 +57,48 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  postgres_db_grafana_db:
+    image: postgres:latest
+    container_name: postgres_db_grafana_db
+    environment:
+      POSTGRES_USER: grafana_db
+      POSTGRES_PASSWORD: grafana_db
+      POSTGRES_DB: grafana_db
+    ports:
+      - "5535:5432"
+    networks:
+      - datagovpipelines_network
+    volumes:
+      - postgres_db_grafana_db:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U report_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana_datagovpipelines:
+    image: grafana/grafana:latest
+    container_name: grafana_datagovpipelines
+    restart: always
+    ports:
+      - "3002:3000"
+    networks:
+      - datagovpipelines_network
+    environment:
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: postgres_db_grafana_db
+      GF_DATABASE_PORT: 5535
+      GF_DATABASE_NAME: grafana_db
+      GF_DATABASE_USER: grafana_db
+      GF_DATABASE_PASSWORD: grafana_db
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      postgres_db_grafana_db:
+        condition: service_healthy
+      postgres_db_report_db:
+        condition: service_healthy
 
   dagster_ui:
     build:
@@ -58,6 +108,8 @@ services:
     command: ["uv", "run", "dagster-webserver", "-h", "0.0.0.0", "-p", "3000"]
     ports:
       - "3001:3000"
+    networks:
+      - datagovpipelines_network
     environment:
       DAGSTER_POSTGRES_HOST: postgres_db_dagster
       DAGSTER_POSTGRES_DB: dagster
@@ -87,15 +139,24 @@ services:
       DAGSTER_POSTGRES_PASSWORD: dagster
       DAGSTER_HOME: /opt/dagster/dagster_home
       DAGSTER_POSTGRES_PORT: 5532
+    networks:
+      - datagovpipelines_network
     volumes:
       - ./dagster_home:/opt/dagster/dagster_home
       - ./src:/app/src
     depends_on:
       postgres_db_dagster:
         condition: service_healthy
-    network_mode: host
 
 volumes:
   postgres_data:
   postgres_data_operational_db:
   postgres_data_report_db:
+  postgres_db_grafana_db:
+
+networks:
+  datagovpipelines_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

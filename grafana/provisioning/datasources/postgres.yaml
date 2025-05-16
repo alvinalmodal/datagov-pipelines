@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL Report DB
+    type: postgres
+    access: proxy
+    url: 172.29.59.153:5534
+    database: report_db
+    user: report_db
+    secureJsonData:
+      password: report_db
+    jsonData:
+      sslmode: disable
+    isDefault: true
+    editable: true

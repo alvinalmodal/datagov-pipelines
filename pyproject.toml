@@ -12,8 +12,12 @@ dependencies = [
     "dagster>=1.10.10",
     "dagster-webserver>=1.10.10",
     "duckdb>=1.2.2",
+    "emoji>=2.14.1",
     "pandas>=2.2.3",
+    "pydantic>=2.11.3",
     "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "vadersentiment>=3.3.2",
 ]
 
 [tool.setuptools]
