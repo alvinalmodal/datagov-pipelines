@@ -4,7 +4,7 @@ datasources:
   - name: PostgreSQL Report DB
     type: postgres
     access: proxy
-    url: 172.29.59.153:5534
+    url: 172.30.0.21:5432
     database: report_db
     user: report_db
     secureJsonData:

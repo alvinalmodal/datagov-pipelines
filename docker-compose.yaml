@@ -139,8 +139,7 @@ services:
       DAGSTER_POSTGRES_PASSWORD: dagster
       DAGSTER_HOME: /opt/dagster/dagster_home
       DAGSTER_POSTGRES_PORT: 5532
-    networks:
-      - datagovpipelines_network
+    network_mode: host
     volumes:
       - ./dagster_home:/opt/dagster/dagster_home
       - ./src:/app/src

@@ -92,10 +92,34 @@ def gold_borders_crossing_total_migration_by_port_code(context: AssetExecutionCo
             value INTEGER not null
         )
     """)
+    
+    table_name_1 = "filtered_border_crossing"
+    con.execute(f"""
+        CREATE TABLE IF NOT EXISTS postgres_db.public.{table_name_1} (
+            port_name VARCHAR(250) not null,
+            state VARCHAR(250) not null,
+            port_code VARCHAR(250) not null,
+            latitude DECIMAL(10,6) not null,
+            longitude DECIMAL(10,6) not null,
+            border VARCHAR(250) not null,
+            measure VARCHAR(250) not null,
+            value INTEGER not null,
+            date DATE
+            
+        )
+    """)
 
     con.execute(f"""
         INSERT INTO postgres_db.public.{table_name} (value, state, port_code, border)
         SELECT SUM("Value") as value, "State" as state, "Port Code" as port_code, "Border" as border
         FROM silver_borders_crossing
         GROUP BY "State", "Port Code", "Border"
+    """)
+    
+    con.execute(f"""
+        INSERT INTO postgres_db.public.{table_name_1} (value, port_name, state, port_code, border, measure, latitude, longitude, date)
+        SELECT SUM("Value") AS value, "Port Name" as port_name, "State" as state, "Port Code" as port_code, 
+        "Border" as border, "Measure" as measure, "Latitude" as latitude, "Longitude" as longitude, STRPTIME("Date", '%b %Y') as date 
+        FROM silver_borders_crossing
+        Group BY  "Port Name", "State", "Port Code", "Border", "Measure","Longitude", "Latitude","Date"
     """)

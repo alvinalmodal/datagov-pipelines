@@ -1,0 +1,16 @@
+# apiVersion: 1
+
+# datasources:
+#   - name: ReportDB
+#     type: postgres
+#     access: proxy
+#     url: postgres_db_report_db:5432
+#     user: report_db
+#     database: report_db
+#     basicAuth: false
+#     isDefault: true
+#     editable: true
+#     secureJsonData:
+#       password: report_db
+#     jsonData:
+#       sslmode: disable
